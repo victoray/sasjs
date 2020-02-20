@@ -227,6 +227,20 @@ export default class SASjs {
     return finalCSV;
   }
 
+  private splitCSV = (csv: string, LIMIT = 65000)=> {
+    const parts  = Math.ceil(csv.length / LIMIT);
+    const chunks = [];
+    let start = 0;
+    let end = LIMIT;
+
+    for (let i = 0; i < parts; i++){
+      chunks.push(csv.substring(start, end));
+      start = end;
+      end += LIMIT;
+    }
+    return chunks;
+  };
+
   public async request(
     programName: string,
     data: any,
@@ -276,10 +290,13 @@ export default class SASjs {
         const sasjs_tables = [];
         let tableCounter=0
         for (const tableName in data) {
-          tableCounter++
+          tableCounter++;
           sasjs_tables.push(tableName);
           const csv = this.convertToCSV(data[tableName]);
-          params[`sasjs${tableCounter}data`] = csv;
+          const chunks = this.splitCSV(csv);
+          chunks.forEach((chunk, index) => {
+            params[`sasjs${tableCounter}${index}data`] = chunk;
+          })
         }
         params['sasjs_tables'] = sasjs_tables.join(' ');
       }
